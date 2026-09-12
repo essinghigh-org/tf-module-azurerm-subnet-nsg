@@ -90,3 +90,42 @@ run "unknown_profile_fails" {
 
   expect_failures = [azurerm_network_security_group.this]
 }
+
+run "deny_internet_inbound_rejects_public_allow" {
+  command = plan
+
+  variables {
+    profiles = ["deny_internet_inbound"]
+    rules = {
+      Oops = {
+        priority              = 100
+        direction             = "Inbound"
+        access                = "Allow"
+        source_address_prefix = "Internet"
+      }
+    }
+  }
+
+  expect_failures = [azurerm_network_security_group.this]
+}
+
+run "deny_internet_inbound_allows_scoped_allow" {
+  command = plan
+
+  variables {
+    profiles = ["deny_internet_inbound"]
+    rules = {
+      Scoped = {
+        priority              = 100
+        direction             = "Inbound"
+        access                = "Allow"
+        source_address_prefix = "10.0.0.0/8"
+      }
+    }
+  }
+
+  assert {
+    condition     = contains(output.rule_names, "Scoped")
+    error_message = "scoped inbound Allow rules must be accepted alongside the profile"
+  }
+}

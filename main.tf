@@ -14,6 +14,13 @@
 # different directions is fine (Azure scopes uniqueness per direction).
 
 locals {
+  public_inbound_source_prefixes = toset([
+    "*",
+    "0.0.0.0/0",
+    "::/0",
+    "internet",
+  ])
+
   allow_internet_outbound_rule = {
     priority                                   = 110
     direction                                  = "Outbound"
@@ -173,6 +180,22 @@ resource "azurerm_network_security_group" "this" {
         for rule in values(local.effective_rules) : "${lower(rule.direction)}/${rule.priority}"
       ])) == length(local.effective_rules)
       error_message = "Each NSG rule must have a unique priority within its direction."
+    }
+
+    precondition {
+      condition = !contains(var.profiles, "deny_internet_inbound") || alltrue([
+        for rule in values(local.effective_rules) : !(
+          lower(rule.direction) == "inbound" &&
+          lower(rule.access) == "allow" &&
+          (
+            try(contains(local.public_inbound_source_prefixes, lower(trimspace(rule.source_address_prefix))), false) ||
+            try(anytrue([
+              for prefix in rule.source_address_prefixes : contains(local.public_inbound_source_prefixes, lower(trimspace(prefix)))
+            ]), false)
+          )
+        )
+      ])
+      error_message = "The deny_internet_inbound profile cannot include public Internet inbound Allow rules."
     }
   }
 }
