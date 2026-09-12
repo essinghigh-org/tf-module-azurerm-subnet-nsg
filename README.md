@@ -45,7 +45,10 @@ The same priority in different directions is fine.
 3. Plan-time preconditions reject: unknown profile names, directions
    other than Inbound/Outbound, access other than Allow/Deny, and two
    rules sharing a priority within the same direction.
-4. Semantic overlap (an allow above a deny) resolves by Azure priority
+4. The `deny_internet_inbound` profile additionally rejects inbound
+   Allow rules sourced from the public Internet (`*`, `0.0.0.0/0`,
+   `::/0`, `internet`), so the profile cannot be silently undermined.
+5. Semantic overlap (an allow above a deny) resolves by Azure priority
    order. Keep allows in the low band and backstops at the top so the
    outcome reads off the plan.
 
