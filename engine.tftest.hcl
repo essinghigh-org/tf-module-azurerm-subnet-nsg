@@ -44,6 +44,11 @@ run "custom_rule_overrides_profile_on_name_clash" {
     condition     = output.rule_names == tolist(["DenyAllInbound"])
     error_message = "custom rule should replace the profile rule of the same name"
   }
+
+  assert {
+    condition     = output.rules["DenyAllInbound"].priority == 3000
+    error_message = "the custom rule priority should win over the profile priority"
+  }
 }
 
 run "duplicate_priority_same_direction_fails" {
